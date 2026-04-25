@@ -4,13 +4,44 @@ A bot-resistant endorsement system for GitHub, delivered as a browser extension.
 
 When you visit a repository on GitHub, Votum injects a button next to **Star**. Clicking it shows how many real developers have *vouched* for the repo, with the people you follow surfaced first. Each developer holds only **10 active Votum slots**, and every vouch is publicly tied to their handle — making the signal expensive to fake.
 
-This repository contains the full v0 implementation:
+---
+
+## Install (users)
+
+1. Download **`votum-0.1.0.crx`** from the [latest release](https://github.com/khemanidev31-sudo/votum/releases/latest).
+2. Open `chrome://extensions` in Chrome.
+3. Toggle **Developer mode** on (top-right).
+4. Drag the `.crx` onto the page → click **Add extension**.
+   - If Chrome refuses (some versions block sideloaded `.crx` files): clone this repo, then in `chrome://extensions` click **Load unpacked** and select the `extension/` folder.
+
+Visit any GitHub repository — the **Votum** button appears next to Star.
+
+## Vouching (users)
+
+Click the extension icon and **Sign in with GitHub**. We auto-check three things:
+
+- account ≥ 365 days old
+- ≥ 3 merged PRs into repos you don't own
+- ≥ 1 push in the last 90 days
+
+If all three pass, you're auto-eligible immediately. If not, you'll be linked to a short application page — a couple of sentences about your work and a LinkedIn or personal site is enough. Manual review takes about a week.
+
+You start with **10 slots**. Each vouch is public, attached to your handle, and withdrawable any time.
+
+**Live URLs**
+
+- Marketing & sign-in: https://votum-app.vercel.app
+- API: https://votum-backend.vercel.app
+
+---
+
+## Repo layout
 
 ```
 votum/
 ├── extension/   Browser extension (Manifest V3, vanilla JS)
 ├── backend/     Fastify + Prisma API server, deploys to Vercel as a single function
-├── web/         Marketing site, OAuth callback, admin queue (static, deploys to Vercel)
+├── web/         Marketing site, sign-in, admin queue (static, deploys to Vercel)
 └── package.json npm workspaces root
 ```
 
