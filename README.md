@@ -4,34 +4,66 @@ A bot-resistant endorsement system for GitHub, delivered as a browser extension.
 
 When you visit a repository on GitHub, Votum injects a button next to **Star**. Clicking it shows how many real developers have *vouched* for the repo, with the people you follow surfaced first. Each developer holds only **10 active Votum slots**, and every vouch is publicly tied to their handle — making the signal expensive to fake.
 
+> **Live URLs**
+> - Site & sign-in: <https://votum-app.vercel.app>
+> - API: <https://votum-backend.vercel.app/v1/health>
+> - Latest CRX: <https://github.com/khemanidev31-sudo/votum/releases/latest>
+
 ---
 
-## Install (users)
+## Install
 
 1. Download **`votum-0.1.0.crx`** from the [latest release](https://github.com/khemanidev31-sudo/votum/releases/latest).
 2. Open `chrome://extensions` in Chrome.
 3. Toggle **Developer mode** on (top-right).
 4. Drag the `.crx` onto the page → click **Add extension**.
-   - If Chrome refuses (some versions block sideloaded `.crx` files): clone this repo, then in `chrome://extensions` click **Load unpacked** and select the `extension/` folder.
+   - If Chrome refuses (some recent versions block sideloaded `.crx` files): clone this repo, then in `chrome://extensions` click **Load unpacked** and select the `extension/` folder.
 
 Visit any GitHub repository — the **Votum** button appears next to Star.
 
-## Vouching (users)
+## Sign in & vouch
 
 Click the extension icon and **Sign in with GitHub**. We auto-check three things:
 
-- account ≥ 365 days old
-- ≥ 3 merged PRs into repos you don't own
-- ≥ 1 push in the last 90 days
+| Rule | Threshold |
+| --- | --- |
+| Account age | ≥ 365 days |
+| Merged PRs into other people's repos | ≥ 3 |
+| Push activity | ≥ 1 push in the last 90 days |
 
-If all three pass, you're auto-eligible immediately. If not, you'll be linked to a short application page — a couple of sentences about your work and a LinkedIn or personal site is enough. Manual review takes about a week.
+Pass all three → auto-eligible immediately. Otherwise the popup links you to a one-page application — a couple of sentences about your work and a LinkedIn or personal-site URL is enough. Manual review takes about a week.
 
-You start with **10 slots**. Each vouch is public, attached to your handle, and withdrawable any time.
+You start with **ten slots**. Vouches are public, attached to your handle, and withdrawable any time.
 
-**Live URLs**
+---
 
-- Marketing & sign-in: https://votum-app.vercel.app
-- API: https://votum-backend.vercel.app
+## How it works
+
+```
+┌──────────────────┐    Firebase Auth    ┌──────────────────┐
+│ Browser ext.     │ ◀─── GitHub OAuth ──│ Sign-in page     │
+│ (Manifest V3)    │      cookie set     │ (votum-app)      │
+└────────┬─────────┘                     └──────────────────┘
+         │ /v1/repos/:o/:n             ┌──────────────────┐
+         │ /v1/vouch                   │ Fastify          │
+         └────────────────────────────▶│ (single function)│
+                                       │ on Vercel        │
+                                       └────────┬─────────┘
+                                                │
+                                       ┌────────▼─────────┐
+                                       │ Neon Postgres    │
+                                       │  • users         │
+                                       │  • vouches       │
+                                       │  • repos         │
+                                       │  • follow graph  │
+                                       │  • applications  │
+                                       └──────────────────┘
+```
+
+- **Extension** detects the repo, fetches data, renders a panel beside Star. Modular under `extension/content/`.
+- **Backend** is one Fastify app exposed via a Vercel function. Routes live under `/v1/*`.
+- **Auth** rides on Firebase Auth's GitHub provider. The backend verifies the Firebase ID token and stores its own session cookie, so subsequent requests don't need to re-validate against Firebase.
+- **Slot enforcement** runs inside a Prisma transaction in `POST /v1/vouch` — there is no client-trusted counter.
 
 ---
 
@@ -40,16 +72,20 @@ You start with **10 slots**. Each vouch is public, attached to your handle, and 
 ```
 votum/
 ├── extension/   Browser extension (Manifest V3, vanilla JS)
-├── backend/     Fastify + Prisma API server, deploys to Vercel as a single function
+│   └── content/  Modular content script: util · api · render · lifecycle
+├── backend/     Fastify + Prisma API; deploys to Vercel as a single function
+│   ├── api/      Vercel function entry (catches everything via vercel.json rewrite)
+│   ├── prisma/   Schema + migrations
+│   └── src/      app.ts (build) · server.ts (local listen) · routes/ · lib/
 ├── web/         Marketing site, sign-in, admin queue (static, deploys to Vercel)
 └── package.json npm workspaces root
 ```
 
 ---
 
-## Quick start (local dev)
+## Local development
 
-### 1. Install dependencies
+### 1. Install
 
 ```bash
 npm install
@@ -58,118 +94,114 @@ npm install
 ### 2. Configure the backend
 
 ```bash
-cd backend
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
-Edit `.env` and fill in:
+Fill in:
 
-- `SESSION_SECRET` — any 32+ character random string (used to sign cookies)
-- `FIREBASE_PROJECT_ID` — your Firebase project ID (e.g. `votum-43e98`). Used to verify Firebase ID tokens server-side.
-- `FIREBASE_SERVICE_ACCOUNT_JSON` — *optional*. Paste the contents of a service-account JSON here for environments without Application Default Credentials. Leave blank if you've set `GOOGLE_APPLICATION_CREDENTIALS` to a file path or you're running on a Cloud platform with ADC.
+- `DATABASE_URL` — a Postgres URL. For local: spin up Postgres any way you like (Docker, Postgres.app, [Neon](https://neon.tech) free tier). For prod: this is auto-provisioned by the Vercel/Neon Marketplace integration.
+- `SESSION_SECRET` — 32+ random characters (used to sign session cookies).
+- `FIREBASE_PROJECT_ID` — your Firebase project ID (e.g. `votum-43e98`). Used to verify Firebase ID tokens.
+- `FIREBASE_SERVICE_ACCOUNT_JSON` — *optional*. Paste the JSON content of a service-account key for environments without ADC. Skip if running on a Cloud platform with Application Default Credentials.
 - `ADMIN_TOKEN` — random string used to gate the admin queue.
 
-### 2a. Configure Firebase Auth (one-time, on the Firebase console)
+### 3. Configure Firebase Auth (one-time, in the console)
 
-1. Open the Firebase project at <https://console.firebase.google.com/>.
-2. **Authentication → Sign-in method → GitHub**: enable the provider.
-3. Create a GitHub OAuth App at <https://github.com/settings/developers> (or reuse one). Copy its **Client ID** and **Client Secret** into the Firebase GitHub provider form.
-4. Firebase will display an **Authorisation callback URL** like `https://votum-43e98.firebaseapp.com/__/auth/handler`. Paste that into the **Authorization callback URL** field on the GitHub OAuth App.
-5. **Authentication → Settings → Authorized domains**: confirm `localhost` and your eventual `votum.dev` are listed.
-6. The browser-side Firebase web config (`apiKey`, `authDomain`, etc.) lives in `web/firebase.js`. Update it if you've created a different Firebase project.
+1. <https://console.firebase.google.com/> → your project → **Authentication → Sign-in method → GitHub** → enable.
+2. Create a GitHub OAuth App at <https://github.com/settings/developers>. Copy its **Client ID** and **Client Secret** into Firebase's GitHub provider form.
+3. Firebase shows an **Authorisation callback URL** like `https://<project-id>.firebaseapp.com/__/auth/handler`. Paste that into the GitHub OAuth App's **Authorization callback URL**.
+4. Firebase **Authentication → Settings → Authorized domains**: confirm `localhost` is listed.
+5. The browser-side Firebase config (`apiKey`, `authDomain`, …) lives in `web/firebase.js`. Update if you've created a different project.
 
-### 3. Initialize the database
-
-SQLite by default for local dev (Prisma file URL).
+### 4. Migrate + seed
 
 ```bash
-npm run db:migrate --workspace=@votum/backend -- --name init
+npm run db:migrate --workspace=@votum/backend
 npm run db:seed --workspace=@votum/backend
 ```
 
-### 4. Run the API
+### 5. Run
 
 ```bash
 npm run dev
-# → http://localhost:3000
+# → http://localhost:3000/v1/health
 ```
 
-Hit `http://localhost:3000/v1/health` to confirm it's up.
+### 6. Load the extension
 
-### 5. Load the extension in Chrome
+For dev: temporarily edit `extension/config.js` to point `API_BASE` and `WEB_BASE` at `http://localhost:3000` and `http://localhost:5173`, then `chrome://extensions` → **Load unpacked** → pick `extension/`.
 
-1. Visit `chrome://extensions`.
-2. Toggle **Developer mode** on.
-3. Click **Load unpacked** and select the `extension/` folder.
-4. Visit any GitHub repo, e.g. <https://github.com/sindresorhus/awesome-nodejs>.
-
-The extension talks to `http://localhost:3000` by default. To point it at a deployed backend, edit `extension/config.js`.
-
-> **Icons.** The manifest currently ships without a toolbar icon so the extension loads cleanly in dev. Drop PNGs at `extension/icons/seal-{16,32,128}.png` and add the `icons` block back to `extension/manifest.json` before publishing to the Chrome Web Store. SVG source lives at `extension/icons/seal.svg`.
-
-### 6. Serve the marketing/admin site (optional in dev)
-
-The `web/` directory is plain static HTML. Any static server works:
+### 7. Serve the static site (optional)
 
 ```bash
 npx --yes serve web -l 5173
 ```
 
-The admin page lives at `/admin.html` and prompts for the admin token.
+The admin queue is at `/admin.html` — it prompts for `ADMIN_TOKEN`.
 
 ---
 
 ## API surface
 
-All endpoints are mounted under `/v1`.
+All endpoints are mounted under `/v1`. CORS allows `chrome-extension://*`, `moz-extension://*`, `*.vercel.app`, and `http://localhost:5173`.
 
-| Method | Path                                | Auth     | Notes                                                |
-| ------ | ----------------------------------- | -------- | ---------------------------------------------------- |
-| GET    | `/health`                           | —        | Liveness probe                                       |
-| GET    | `/repos/:owner/:name`               | Optional | Public counts and personalised top-5 vouchers        |
-| GET    | `/badge/:owner/:name.svg`           | —        | Shields.io-compatible SVG (cached 1h)                |
-| POST   | `/auth/firebase-callback`           | —        | `{ id_token, github_access_token }` from Firebase Auth; verifies, runs eligibility, sets session cookie |
-| POST   | `/auth/logout`                      | Cookie   | Clears the session                                   |
-| GET    | `/auth/status`                      | Cookie?  | `{ signed_in: boolean }` cheap probe                 |
-| GET    | `/auth/config`                      | —        | `{ project_id, web_base_url }` for ops              |
-| GET    | `/me`                               | Cookie   | Current user, eligibility, slot usage                |
-| GET    | `/me/vouches`                       | Cookie   | Active vouches owned by the viewer                   |
-| POST   | `/vouch`                            | Cookie   | `{ repo_full_name }`                                 |
-| DELETE | `/vouch/:owner/:name`               | Cookie   | Withdraw a vouch                                     |
-| POST   | `/apply`                            | Cookie   | Submit manual review application                     |
-| GET    | `/admin/queue`                      | Token    | List pending applications                            |
-| POST   | `/admin/queue/:id/approve`          | Token    | Approve an application                               |
-| POST   | `/admin/queue/:id/reject`           | Token    | Reject with note                                     |
-| POST   | `/admin/users/:id/suspend`          | Token    | Suspend a user                                       |
+| Method | Path                              | Auth     | Notes                                                                          |
+| ------ | --------------------------------- | -------- | ------------------------------------------------------------------------------ |
+| GET    | `/health`                         | —        | Liveness probe                                                                 |
+| GET    | `/repos/:owner/:name`             | Optional | Count + personalised top-5 vouchers (you_follow → notable → ecosystem → other) |
+| GET    | `/badge/:owner/:name.svg`         | —        | Shields-style SVG, cached 1h                                                   |
+| POST   | `/auth/firebase-callback`         | —        | `{ id_token, github_access_token }` from Firebase Auth; sets session cookie    |
+| POST   | `/auth/logout`                    | Cookie   | Clears the session                                                             |
+| GET    | `/auth/status`                    | Cookie?  | `{ signed_in: boolean }`                                                       |
+| GET    | `/auth/config`                    | —        | `{ project_id, web_base_url }`                                                 |
+| GET    | `/me`                             | Cookie   | Profile, eligibility, slot usage                                               |
+| GET    | `/me/vouches`                     | Cookie   | Active vouches the viewer holds                                                |
+| POST   | `/vouch`                          | Cookie   | `{ repo_full_name }` — slot ceiling enforced in transaction                    |
+| DELETE | `/vouch/:owner/:name`             | Cookie   | Withdraw a vouch                                                               |
+| POST   | `/apply`                          | Cookie   | Submit a manual review application                                             |
+| GET    | `/admin/queue`                    | Token    | List pending applications                                                      |
+| POST   | `/admin/queue/:id/approve`        | Token    | Approve an application                                                         |
+| POST   | `/admin/queue/:id/reject`         | Token    | Reject (decision note shown to the applicant)                                  |
+| POST   | `/admin/users/:id/suspend`        | Token    | Suspend a user (their vouches stop counting)                                   |
 
-CORS is configured for `chrome-extension://*`, `moz-extension://*`, the marketing origin, and `http://localhost:5173`.
-
----
-
-## Eligibility
-
-A user can issue Votums when one of the following holds:
-
-- **Auto-eligible** — checked at sign-in and weekly afterwards:
-  - GitHub account ≥ 365 days old, AND
-  - ≥ 3 PRs merged into repos the user does not own, AND
-  - ≥ 1 push event in the last 90 days.
-- **Manually eligible** — approved through `/v1/apply` and the admin queue.
-- **Suspended** — admin-flagged. Their vouches stay in the database but are excluded from public counts.
-
-The hard ceiling of **10 active vouches per user** is enforced inside `POST /vouch` under a transaction.
+Admin endpoints require an `X-Votum-Admin: <ADMIN_TOKEN>` header.
 
 ---
 
-## Production checklist (out of scope for v0 build, captured for later)
+## Eligibility model
 
-- [ ] Switch `prisma/schema.prisma` datasource to `postgresql` and re-run migrations.
-- [ ] Provision Postgres (Neon, Supabase, or Marketplace) and Redis (rate limiting).
-- [ ] Replace the in-memory rate limiter with `@fastify/rate-limit` backed by Redis.
-- [ ] Add the toolbar icons back to `manifest.json`.
-- [ ] Set `COOKIE_DOMAIN=.votum.dev` and ensure cookies are `Secure; SameSite=None`.
-- [ ] Rotate and store `SESSION_SECRET` in your hosting platform's secret manager.
-- [ ] Submit `votum-extension.zip` to the Chrome Web Store.
-- [ ] Wire `votum.dev` DNS to the static host and `api.votum.dev` to the backend.
+A user can issue vouches when one of these holds:
 
-See `Section 13` of the build spec for the known-fragile areas and how the code defends against them (selector rot, Turbo nav, GitHub rate limits, store-review surface area, privacy disclosure).
+- **Auto-eligible** — three checks (account age, merged PRs in others' repos, recent push) re-run weekly.
+- **Manually eligible** — approved via `POST /v1/apply` and the admin queue. Persists indefinitely.
+- **Suspended** — admin-flagged. Existing vouches stay in the DB but stop counting in public totals.
+
+The hard ceiling of **10 active vouches per user** is enforced inside `POST /v1/vouch` under `prisma.$transaction` — the count, the unique `(user_id, repo_id)` constraint, and the new row are checked together.
+
+---
+
+## Production checklist
+
+Done:
+
+- [x] Postgres datasource (Neon)
+- [x] Backend deployed to Vercel as a serverless function
+- [x] Web deployed to Vercel
+- [x] CRX published as a GitHub release asset
+
+Outstanding before a wider launch:
+
+- [ ] Replace the in-memory rate limiter with `@fastify/rate-limit` backed by Redis (or Upstash / Vercel KV) — currently single-instance only.
+- [ ] Tighter CORS — drop the `*.vercel.app` wildcard once the canonical origins are stable.
+- [ ] CSRF token on `POST /vouch` — currently relies on `SameSite=None; Secure` + cookie signing.
+- [ ] DB ping in `/v1/health` so uptime monitors catch Postgres outages.
+- [ ] Toolbar icon PNGs at `extension/icons/seal-{16,32,128}.png` + restore the `icons` block in `manifest.json` for Chrome Web Store submission.
+- [ ] Set `COOKIE_DOMAIN=.votum.dev` once a real domain is in front of both projects.
+- [ ] Rotate `SESSION_SECRET` and `ADMIN_TOKEN` to platform-managed secrets.
+- [ ] Tests covering: slot-cap transaction, eligibility computation, personalisation ordering.
+
+---
+
+## License
+
+MIT.
