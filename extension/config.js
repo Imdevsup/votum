@@ -5,8 +5,9 @@
 //   - edit this file to point at http://localhost:3000
 //   - hit the reload icon on the extension card
 //
-// `WEB_BASE` is the marketing/sign-in origin. The popup opens
-// ${WEB_BASE}/sign-in.html when the user clicks "Sign in with GitHub".
+// `WEB_BASE` is the marketing origin. Used as the return target after
+// GitHub OAuth completes; the actual sign-in is started by opening
+// ${API_BASE}/v1/auth/github/start in a new tab.
 window.VOTUM_CONFIG = Object.freeze({
   API_BASE: 'https://votum-backend.vercel.app',
   WEB_BASE: 'https://votum-app.vercel.app',

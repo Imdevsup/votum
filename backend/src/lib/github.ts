@@ -97,6 +97,28 @@ async function ghFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
   return data;
 }
 
+export async function exchangeOAuthCode(
+  code: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<string> {
+  const res = await fetch('https://github.com/login/oauth/access_token', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': USER_AGENT,
+    },
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
+  });
+  if (!res.ok) throw new GitHubApiError(res.status, 'Failed to exchange OAuth code');
+  const data = (await res.json()) as { access_token?: string; error?: string; error_description?: string };
+  if (data.error || !data.access_token) {
+    throw new GitHubApiError(400, data.error_description || data.error || 'No access token returned');
+  }
+  return data.access_token;
+}
+
 export const github = {
   user: (token: string) => ghFetch<GhUser>('/user', { token }),
 

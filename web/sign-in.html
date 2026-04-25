@@ -12,10 +12,10 @@
 <body>
   <div class="page">
     <h1>Sign in</h1>
-    <p class="muted">
+    <p>
       Votum uses GitHub to confirm you're a real developer. We read your
-      public profile and your following list — nothing else, and nothing is
-      stored until eligibility is confirmed.
+      public profile and following list — nothing else, and only after
+      you authorise.
     </p>
 
     <button id="signin" class="btn primary" style="margin-top: 18px">
@@ -27,15 +27,24 @@
     <details style="margin-top: 24px">
       <summary class="muted small">What happens next?</summary>
       <ol class="muted small" style="margin-top: 8px">
-        <li>GitHub confirms your account and sends an authorisation back to Firebase.</li>
-        <li>Firebase issues an ID token to this page.</li>
-        <li>We forward both the ID token and your GitHub access token to the Votum backend.</li>
-        <li>The backend runs the eligibility check, syncs your follow list once, then issues a session cookie.</li>
-        <li>You can close this tab — the extension picks up the session automatically.</li>
+        <li>GitHub asks if you'll authorise the Votum OAuth App.</li>
+        <li>If yes, GitHub redirects back to the Votum API with a one-time code.</li>
+        <li>The API exchanges that code for an access token, looks up your profile, runs the eligibility check, and issues a session cookie.</li>
+        <li>You land back here with a "Signed in" message. Close the tab — the extension picks up the session automatically.</li>
       </ol>
     </details>
   </div>
 
-  <script type="module" src="./sign-in.js"></script>
+  <script type="module">
+    import { API_BASE } from './config.js';
+    document.getElementById('signin').addEventListener('click', () => {
+      // Hand off to the backend's redirect-style /auth/github/start.
+      // It builds the GitHub URL and redirects, GitHub redirects back,
+      // and the user lands on /auth-done.html.
+      window.location.href = `${API_BASE}/v1/auth/github/start?return_to=${encodeURIComponent(
+        window.location.origin + '/auth-done.html',
+      )}`;
+    });
+  </script>
 </body>
 </html>

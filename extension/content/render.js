@@ -107,7 +107,8 @@
     const elig = data.viewer_eligibility;
 
     if (elig === null) {
-      return makeLink('Take the vow yourself', `${cfg.WEB_BASE}/sign-in.html`);
+      const returnTo = encodeURIComponent(`${cfg.WEB_BASE}/auth-done.html`);
+      return makeLink('Take the vow yourself', `${cfg.API_BASE}/v1/auth/github/start?return_to=${returnTo}`);
     }
     if (elig === 'pending' || elig === 'rejected') {
       return makeLink('Apply for review', `${cfg.WEB_BASE}/apply.html`);

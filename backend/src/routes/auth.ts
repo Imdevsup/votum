@@ -1,17 +1,19 @@
-// Auth routes.
+// GitHub OAuth flow.
 //
-// Sign-in is delegated to Firebase Auth on the client. The client performs
-// the GitHub OAuth dance via Firebase, then POSTs the resulting Firebase
-// ID token + GitHub access token here. We verify the ID token, run the
-// eligibility check using the GitHub access token, then issue our own
-// session cookie. The Firebase ID token is *not* used for subsequent
-// requests — the cookie is.
+//   POST /v1/auth/github/start    → returns the GitHub authorisation URL
+//   GET  /v1/auth/github/callback → consumes the OAuth code, runs the
+//                                    eligibility check, sets the session
+//                                    cookie, redirects to /auth-done.html
+//   POST /v1/auth/logout          → clears the session
+//   GET  /v1/auth/status          → cheap signed-in probe
+//
+// Direct OAuth, no third-party broker. The session cookie set here is
+// what every subsequent request rides on.
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { env } from '../env.js';
 import { prisma } from '../db.js';
-import { github } from '../lib/github.js';
-import { verifyIdToken } from '../lib/firebase-admin.js';
+import { exchangeOAuthCode, github } from '../lib/github.js';
 import {
   createSession,
   setSessionCookie,
@@ -20,95 +22,140 @@ import {
   getViewer,
   SESSION_COOKIE,
 } from '../lib/session.js';
+import { consumeState, createState } from '../lib/oauth-state.js';
 import { applyEligibilityResult, computeAutoEligibility } from '../lib/eligibility.js';
 
-const Body = z.object({
-  id_token: z.string().min(20),
-  github_access_token: z.string().min(20),
-});
+const SCOPES = 'read:user user:follow';
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
-  app.post('/auth/firebase-callback', async (req, reply) => {
-    const parsed = Body.safeParse(req.body);
-    if (!parsed.success) return reply.code(400).send({ error: 'bad_body' });
-    const { id_token, github_access_token } = parsed.data;
+  /**
+   * Start sign-in. Returns the GitHub authorise URL the client should
+   * navigate to. Optionally accepts `{ return_to }` so the callback can
+   * bounce the user back to where they came from.
+   */
+  app.post('/auth/github/start', async (req, reply) => {
+    const body = z.object({ return_to: z.string().url().optional() }).safeParse(req.body ?? {});
+    const return_to = body.success ? body.data.return_to : undefined;
+    const state = createState(return_to);
 
-    let decoded;
-    try {
-      decoded = await verifyIdToken(id_token);
-    } catch (err) {
-      req.log.warn({ err }, 'firebase id token verification failed');
-      return reply.code(401).send({ error: 'invalid_id_token' });
-    }
-
-    if (decoded.firebase.sign_in_provider !== 'github.com') {
-      return reply.code(400).send({
-        error: 'must_use_github_provider',
-        provider: decoded.firebase.sign_in_provider,
-      });
-    }
-
-    let ghProfile;
-    try {
-      ghProfile = await github.user(github_access_token);
-    } catch (err) {
-      req.log.warn({ err }, 'github profile fetch failed');
-      return reply.code(401).send({ error: 'invalid_github_token' });
-    }
-
-    const user = await prisma.user.upsert({
-      where: { githubId: BigInt(ghProfile.id) },
-      update: {
-        githubLogin: ghProfile.login,
-        avatarUrl: ghProfile.avatar_url,
-        lastSeenAt: new Date(),
-      },
-      create: {
-        githubId: BigInt(ghProfile.id),
-        githubLogin: ghProfile.login,
-        avatarUrl: ghProfile.avatar_url,
-      },
+    const params = new URLSearchParams({
+      client_id: env.GITHUB_CLIENT_ID,
+      redirect_uri: env.GITHUB_OAUTH_REDIRECT,
+      scope: SCOPES,
+      state,
+      allow_signup: 'true',
     });
-
-    try {
-      const result = await computeAutoEligibility(ghProfile.login, github_access_token);
-      await applyEligibilityResult(user.id, result);
-    } catch (err) {
-      req.log.warn({ err }, 'eligibility compute failed at sign-in');
-    }
-
-    try {
-      const following = await github.following(github_access_token);
-      await prisma.$transaction([
-        prisma.followGraph.deleteMany({ where: { followerId: BigInt(ghProfile.id) } }),
-        ...(following.length
-          ? [
-              prisma.followGraph.createMany({
-                data: following.map((f) => ({
-                  followerId: BigInt(ghProfile.id),
-                  followedId: BigInt(f.id),
-                })),
-              }),
-            ]
-          : []),
-        prisma.user.update({
-          where: { id: user.id },
-          data: { followGraphSyncedAt: new Date() },
-        }),
-      ]);
-    } catch (err) {
-      req.log.warn({ err }, 'follow-graph sync failed at sign-in');
-    }
-
-    const sid = await createSession(user.id);
-    setSessionCookie(reply, sid);
-
     return reply.send({
-      ok: true,
-      login: user.githubLogin,
-      eligibility: user.eligibility,
+      authorize_url: `https://github.com/login/oauth/authorize?${params.toString()}`,
     });
   });
+
+  /**
+   * Convenience: redirect-style start. Hitting this URL in a browser tab
+   * sends the user straight into GitHub — handy for the extension popup
+   * which just opens this in a new tab.
+   */
+  app.get<{ Querystring: { return_to?: string } }>('/auth/github/start', async (req, reply) => {
+    const state = createState(req.query.return_to);
+    const params = new URLSearchParams({
+      client_id: env.GITHUB_CLIENT_ID,
+      redirect_uri: env.GITHUB_OAUTH_REDIRECT,
+      scope: SCOPES,
+      state,
+      allow_signup: 'true',
+    });
+    return reply.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
+  });
+
+  /**
+   * GitHub redirects here after the user authorises. We exchange the code
+   * for an access token, fetch the profile, upsert the User row, run the
+   * eligibility check + follow-graph sync, then set the session cookie
+   * and bounce to /auth-done.html.
+   */
+  app.get<{ Querystring: { code?: string; state?: string; error?: string } }>(
+    '/auth/github/callback',
+    async (req, reply) => {
+      const { code, state, error } = req.query;
+      if (error) {
+        return reply.redirect(
+          `${env.WEB_BASE_URL}/auth-done.html?status=error&reason=${encodeURIComponent(error)}`,
+        );
+      }
+      if (!code || !state) {
+        return reply.code(400).send({ error: 'missing_code_or_state' });
+      }
+
+      const stateRec = consumeState(state);
+      if (!stateRec) {
+        return reply.redirect(
+          `${env.WEB_BASE_URL}/auth-done.html?status=error&reason=invalid_or_expired_state`,
+        );
+      }
+
+      let token: string;
+      try {
+        token = await exchangeOAuthCode(code, env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET);
+      } catch (err) {
+        req.log.error({ err }, 'oauth exchange failed');
+        return reply.redirect(
+          `${env.WEB_BASE_URL}/auth-done.html?status=error&reason=oauth_exchange_failed`,
+        );
+      }
+
+      const ghProfile = await github.user(token);
+      const user = await prisma.user.upsert({
+        where: { githubId: BigInt(ghProfile.id) },
+        update: {
+          githubLogin: ghProfile.login,
+          avatarUrl: ghProfile.avatar_url,
+          lastSeenAt: new Date(),
+        },
+        create: {
+          githubId: BigInt(ghProfile.id),
+          githubLogin: ghProfile.login,
+          avatarUrl: ghProfile.avatar_url,
+        },
+      });
+
+      try {
+        const result = await computeAutoEligibility(ghProfile.login, token);
+        await applyEligibilityResult(user.id, result);
+      } catch (err) {
+        req.log.warn({ err }, 'eligibility compute failed at sign-in');
+      }
+
+      try {
+        const following = await github.following(token);
+        await prisma.$transaction([
+          prisma.followGraph.deleteMany({ where: { followerId: BigInt(ghProfile.id) } }),
+          ...(following.length
+            ? [
+                prisma.followGraph.createMany({
+                  data: following.map((f) => ({
+                    followerId: BigInt(ghProfile.id),
+                    followedId: BigInt(f.id),
+                  })),
+                }),
+              ]
+            : []),
+          prisma.user.update({
+            where: { id: user.id },
+            data: { followGraphSyncedAt: new Date() },
+          }),
+        ]);
+      } catch (err) {
+        req.log.warn({ err }, 'follow-graph sync failed at sign-in');
+      }
+
+      const sid = await createSession(user.id);
+      setSessionCookie(reply, sid);
+
+      const params = new URLSearchParams({ status: 'ok', login: user.githubLogin });
+      if (stateRec.return_to) params.set('return_to', stateRec.return_to);
+      return reply.redirect(`${env.WEB_BASE_URL}/auth-done.html?${params.toString()}`);
+    },
+  );
 
   app.post('/auth/logout', async (req, reply) => {
     const raw = req.cookies[SESSION_COOKIE];
@@ -126,11 +173,4 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const v = await getViewer(req);
     return { signed_in: Boolean(v) };
   });
-
-  // Surface a one-line config probe so the operator can confirm Firebase
-  // is reachable from this backend before any user attempts sign-in.
-  app.get('/auth/config', async () => ({
-    project_id: env.FIREBASE_PROJECT_ID,
-    web_base_url: env.WEB_BASE_URL,
-  }));
 };

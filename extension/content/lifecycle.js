@@ -24,7 +24,8 @@
     try {
       const res = await vouch(repo.full_name);
       if (res.status === 401) {
-        window.open(`${cfg.WEB_BASE}/sign-in.html`, '_blank');
+        const returnTo = encodeURIComponent(`${cfg.WEB_BASE}/auth-done.html`);
+        window.open(`${cfg.API_BASE}/v1/auth/github/start?return_to=${returnTo}`, '_blank');
         setFooterMessage(footer, 'Sign in to continue.', 'error');
         return;
       }

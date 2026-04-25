@@ -1,5 +1,5 @@
 // Admin queue — token-gated review of manual eligibility applications.
-import { API_BASE } from './firebase.js';
+import { API_BASE } from './config.js';
 
 const queue = document.getElementById('queue');
 const empty = document.getElementById('empty');

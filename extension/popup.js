@@ -60,11 +60,13 @@
   }
 
   function startSignIn() {
-    // Sign-in is handled on the marketing site via Firebase Auth. The
-    // sign-in page POSTs the result to /v1/auth/firebase-callback, which
-    // sets the session cookie. When the user reopens the popup, /me will
-    // resolve.
-    chrome.tabs.create({ url: cfg.WEB_BASE + '/sign-in.html' });
+    // Hand off to the backend's redirect-style /auth/github/start, which
+    // builds the GitHub authorise URL and bounces the user there. After
+    // the user consents, GitHub returns to /v1/auth/github/callback,
+    // which sets the session cookie and lands on /auth-done.html.
+    // Re-opening the popup picks up the new cookie automatically.
+    const returnTo = encodeURIComponent(cfg.WEB_BASE + '/auth-done.html');
+    chrome.tabs.create({ url: `${cfg.API_BASE}/v1/auth/github/start?return_to=${returnTo}` });
     window.close();
   }
 

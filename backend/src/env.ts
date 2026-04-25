@@ -35,12 +35,9 @@ const Env = z.object({
   DATABASE_URL: z.string().min(1),
   SESSION_SECRET: z.string().min(16, 'SESSION_SECRET must be at least 16 characters'),
 
-  // Firebase Auth handles the GitHub OAuth dance. We verify the ID token
-  // server-side and consume the GitHub access token forwarded by the client.
-  FIREBASE_PROJECT_ID: z.string().min(1, 'FIREBASE_PROJECT_ID is required'),
-  // Optional service account JSON (string) for ID token verification in
-  // environments without ADC. Falls back to applicationDefault() when empty.
-  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional().default(''),
+  GITHUB_CLIENT_ID: z.string().min(1, 'GITHUB_CLIENT_ID is required'),
+  GITHUB_CLIENT_SECRET: z.string().min(1, 'GITHUB_CLIENT_SECRET is required'),
+  GITHUB_OAUTH_REDIRECT: z.string().url(),
 
   WEB_BASE_URL: z.string().url(),
   PUBLIC_API_URL: z.string().url(),
