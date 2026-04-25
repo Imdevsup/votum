@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in — Votum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <h1>Sign in</h1>
+    <p class="muted">
+      Votum uses GitHub to confirm you're a real developer. We read your
+      public profile and your following list — nothing else, and nothing is
+      stored until eligibility is confirmed.
+    </p>
+
+    <button id="signin" class="btn primary" style="margin-top: 18px">
+      Continue with GitHub
+    </button>
+
+    <p id="status" class="muted" style="margin-top: 16px"></p>
+
+    <details style="margin-top: 24px">
+      <summary class="muted small">What happens next?</summary>
+      <ol class="muted small" style="margin-top: 8px">
+        <li>GitHub confirms your account and sends an authorisation back to Firebase.</li>
+        <li>Firebase issues an ID token to this page.</li>
+        <li>We forward both the ID token and your GitHub access token to the Votum backend.</li>
+        <li>The backend runs the eligibility check, syncs your follow list once, then issues a session cookie.</li>
+        <li>You can close this tab — the extension picks up the session automatically.</li>
+      </ol>
+    </details>
+  </div>
+
+  <script type="module" src="./sign-in.js"></script>
+</body>
+</html>

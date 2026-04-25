@@ -1,0 +1,6 @@
+{
+  "name": "@votum/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Votum browser extension (Manifest V3)."
+}

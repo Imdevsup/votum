@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apply — Votum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <h1>Apply for review</h1>
+    <p>
+      Your account didn't pass the auto-check. Tell us about your work in
+      a few sentences. Reviews take about a week.
+    </p>
+
+    <form id="apply-form">
+      <label for="reason">Why we should let you vouch</label>
+      <textarea id="reason" name="reason_text" required minlength="40" maxlength="2000"
+                placeholder="What do you build? What's your handle's track record? Anything we wouldn't see from a quick look at your GitHub?"></textarea>
+
+      <label>Links (optional)</label>
+      <input type="url" id="link1" placeholder="https://your-site.example" />
+      <input type="url" id="link2" placeholder="https://www.linkedin.com/in/you" style="margin-top: 8px" />
+      <input type="url" id="link3" placeholder="https://twitter.com/you" style="margin-top: 8px" />
+
+      <div class="actions">
+        <button type="submit" class="btn primary">Submit application</button>
+      </div>
+      <p class="muted small" id="status" style="margin-top: 14px"></p>
+    </form>
+  </div>
+
+  <script type="module">
+    import { API_BASE } from './firebase.js';
+    const form = document.getElementById('apply-form');
+    const status = document.getElementById('status');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = 'Submitting…';
+      const reason = document.getElementById('reason').value;
+      const links = ['link1', 'link2', 'link3']
+        .map((id) => document.getElementById(id).value.trim())
+        .filter(Boolean);
+      try {
+        const res = await fetch(`${API_BASE}/v1/apply`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason_text: reason, links }),
+        });
+        if (res.status === 401) {
+          status.textContent = 'You need to sign in first. Open the extension and sign in.';
+          return;
+        }
+        const data = await res.json();
+        if (data.ok) {
+          status.textContent = "Submitted. We'll get back to you within a week.";
+          form.reset();
+        } else {
+          status.textContent = `Could not submit: ${data.error || 'unknown error'}`;
+        }
+      } catch {
+        status.textContent = 'Network error. Try again.';
+      }
+    });
+  </script>
+</body>
+</html>

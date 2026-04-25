@@ -1,0 +1,218 @@
+/* Shared styles for the Votum auxiliary pages — sign-in, auth-done, apply,
+ * admin. The marketing index ships its own self-contained <style> so it
+ * can iterate on layout without touching the others; this stylesheet is
+ * the typography + chrome those inner pages all share. Palette and tone
+ * mirror the marketing page so the product reads as one continuous
+ * artefact end to end. */
+
+:root {
+  --parchment:      #F4EDE0;
+  --parchment-dark: #E8DEC9;
+  --ink:            #1A1410;
+  --wine:           #6B1818;
+  --wine-deep:      #4A0E0E;
+  --wine-soft:      #C04050;
+  --cream:          #F5E6C9;
+  --gold:           #A88944;
+  --graphite:       #4A4540;
+  --soft:           #8B8478;
+  --rule:           rgba(74, 14, 14, 0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--parchment);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+  background-image:
+    radial-gradient(ellipse at top left, rgba(168, 137, 68, 0.05), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(107, 24, 24, 0.04), transparent 50%);
+}
+
+a { color: var(--wine); }
+a:hover { color: var(--wine-deep); }
+
+.muted { color: var(--graphite); }
+.small { font-size: 12px; }
+.hidden { display: none !important; }
+
+/* ----- Single-card pages (sign-in, auth-done, apply) ----- */
+
+.page {
+  max-width: 540px;
+  margin: 80px auto;
+  padding: 44px 40px;
+  background: linear-gradient(180deg, #fefcf8 0%, #faf2e3 100%);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 4px 16px rgba(107, 24, 24, 0.06),
+    0 24px 48px rgba(26, 20, 16, 0.06);
+}
+
+.page h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.05;
+  margin: 0 0 14px;
+  color: var(--wine-deep);
+}
+
+.page p {
+  margin: 0 0 12px;
+  color: var(--graphite);
+}
+
+.page label {
+  display: block;
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--graphite);
+  font-weight: 600;
+}
+
+.page textarea,
+.page input[type="text"],
+.page input[type="password"],
+.page input[type="url"] {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  margin-top: 6px;
+  transition: border-color 80ms ease, box-shadow 80ms ease;
+}
+
+.page textarea { min-height: 140px; resize: vertical; }
+
+.page textarea:focus,
+.page input:focus {
+  outline: none;
+  border-color: var(--wine);
+  box-shadow: 0 0 0 3px rgba(107, 24, 24, 0.10);
+}
+
+.page .actions { margin-top: 24px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: filter 80ms ease, background 80ms ease, color 80ms ease;
+}
+
+.btn.primary {
+  background: linear-gradient(180deg, var(--wine), var(--wine-deep));
+  color: var(--cream);
+  border-color: var(--wine);
+}
+.btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn.ghost {
+  background: transparent;
+  color: var(--wine);
+  border-color: var(--wine);
+}
+.btn.ghost:hover { background: rgba(107, 24, 24, 0.06); }
+
+/* ----- Admin queue ----- */
+
+.admin-queue {
+  max-width: 880px;
+  margin: 60px auto;
+  padding: 0 36px;
+}
+
+.admin-queue h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 42px;
+  color: var(--wine-deep);
+  margin: 0 0 8px;
+}
+
+.admin-card {
+  background: linear-gradient(180deg, #fefcf8 0%, #faf2e3 100%);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 24px 26px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 12px rgba(107, 24, 24, 0.04);
+}
+
+.admin-card .who { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.admin-card img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--parchment-dark);
+}
+.admin-card .reason {
+  white-space: pre-wrap;
+  margin: 8px 0 14px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 16px;
+  font-style: italic;
+  color: var(--ink);
+  line-height: 1.55;
+}
+.admin-card .links a { display: inline-block; margin-right: 12px; font-size: 13px; }
+.admin-card .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.admin-card textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  margin-top: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  background: #fff;
+}
+.admin-card .approve {
+  background: linear-gradient(180deg, var(--wine), var(--wine-deep));
+  color: var(--cream);
+  padding: 8px 16px;
+  border: 1px solid var(--wine);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-card .reject {
+  background: transparent;
+  color: var(--wine);
+  border: 1px solid var(--wine);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-card .approve:hover { filter: brightness(1.08); }
+.admin-card .reject:hover { background: rgba(107, 24, 24, 0.06); }

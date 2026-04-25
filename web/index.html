@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Votum — A solemn vow for open source</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script type="module" src="./firebase.js"></script>
+<style>
+  :root {
+    --parchment: #F4EDE0;
+    --parchment-dark: #E8DEC9;
+    --ink: #1A1410;
+    --wine: #6B1818;
+    --wine-deep: #4A0E0E;
+    --gold: #A88944;
+    --graphite: #4A4540;
+    --soft: #8B8478;
+    --gh-bg: #ffffff;
+    --gh-border: #d0d7de;
+    --gh-text: #1f2328;
+    --gh-muted: #59636e;
+    --gh-blue: #0969da;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--parchment);
+    color: var(--ink);
+    line-height: 1.6;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(168, 137, 68, 0.05), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(107, 24, 24, 0.04), transparent 50%);
+  }
+
+  /* Subtle paper grain */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  }
+
+  .container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 32px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    padding: 80px 0 40px;
+    border-bottom: 1px solid rgba(26, 20, 16, 0.12);
+  }
+
+  .header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 60px;
+  }
+
+  .logo-lockup {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .seal {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--wine) 0%, var(--wine-deep) 60%, #2a0606 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 28px;
+    box-shadow:
+      inset 0 2px 6px rgba(255, 255, 255, 0.15),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.4),
+      0 4px 12px rgba(74, 14, 14, 0.3);
+    position: relative;
+    transform: rotate(-4deg);
+  }
+
+  .seal::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1px dashed rgba(244, 237, 224, 0.35);
+  }
+
+  .seal::after {
+    content: "★";
+    position: absolute;
+    bottom: 8px;
+    right: 14px;
+    font-size: 10px;
+    color: rgba(244, 237, 224, 0.5);
+  }
+
+  .logo-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 44px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .logo-sub {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--soft);
+    margin-top: 6px;
+  }
+
+  nav {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    padding-top: 12px;
+  }
+
+  nav a {
+    font-size: 13px;
+    color: var(--graphite);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+
+  nav a:hover { color: var(--wine); }
+
+  /* ===== HERO ===== */
+  .hero {
+    padding: 100px 0 80px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-tag {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--wine);
+    margin-bottom: 24px;
+  }
+
+  .hero-tag::before, .hero-tag::after {
+    content: "—";
+    margin: 0 16px;
+    color: var(--gold);
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(54px, 8vw, 108px);
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 32px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--wine);
+    font-weight: 400;
+  }
+
+  .hero-lede {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--graphite);
+    max-width: 620px;
+    margin: 0 auto 40px;
+    line-height: 1.5;
+  }
+
+  .hero-meta {
+    display: inline-flex;
+    gap: 12px;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--soft);
+  }
+
+  .hero-meta span { padding: 0 12px; }
+  .hero-meta .dot { width: 4px; height: 4px; background: var(--gold); border-radius: 50%; padding: 0; }
+
+  /* ===== SECTION HEADERS ===== */
+  .section {
+    padding: 80px 0;
+    position: relative;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--wine);
+    margin-bottom: 16px;
+  }
+
+  .section-label::before {
+    content: "";
+    width: 32px;
+    height: 1px;
+    background: var(--wine);
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin-bottom: 16px;
+    max-width: 800px;
+  }
+
+  .section-sub {
+    font-size: 16px;
+    color: var(--graphite);
+    max-width: 620px;
+    margin-bottom: 56px;
+  }
+
+  /* ===== GITHUB MOCKUP ===== */
+  .gh-frame {
+    background: var(--gh-bg);
+    border: 1px solid rgba(26, 20, 16, 0.12);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 12px 40px rgba(26, 20, 16, 0.12),
+      0 32px 80px rgba(26, 20, 16, 0.06);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--gh-text);
+    font-size: 14px;
+    position: relative;
+  }
+
+  .gh-titlebar {
+    background: #f6f8fa;
+    border-bottom: 1px solid var(--gh-border);
+    padding: 8px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .gh-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #d0d7de;
+  }
+  .gh-dot:nth-child(1) { background: #ff5f57; }
+  .gh-dot:nth-child(2) { background: #febc2e; }
+  .gh-dot:nth-child(3) { background: #28c840; }
+
+  .gh-url {
+    margin-left: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gh-muted);
+    background: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--gh-border);
+    flex: 1;
+    max-width: 480px;
+  }
+
+  .gh-content {
+    padding: 24px 32px 32px;
+  }
+
+  .gh-repo-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .gh-repo-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--gh-muted);
+  }
+
+  .gh-org {
+    color: var(--gh-blue);
+    font-weight: 400;
+  }
+
+  .gh-slash {
+    color: var(--gh-muted);
+    font-weight: 300;
+  }
+
+  .gh-repo-name {
+    color: var(--gh-blue);
+    font-weight: 600;
+  }
+
+  .gh-public {
+    margin-left: 8px;
+    font-size: 12px;
+    padding: 2px 8px;
+    border: 1px solid var(--gh-border);
+    border-radius: 12px;
+    color: var(--gh-muted);
+    font-weight: 500;
+  }
+
+  .gh-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .gh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: #f6f8fa;
+    border: 1px solid rgba(31, 35, 40, 0.15);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gh-text);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .gh-btn:hover { background: #f3f4f6; }
+
+  .gh-btn-count {
+    padding: 5px 8px;
+    background: white;
+    border-left: 1px solid rgba(31, 35, 40, 0.15);
+    margin-left: 4px;
+    margin-right: -8px;
+    font-weight: 600;
+  }
+
+  /* The new Votum button - the star of the show */
+  .gh-btn.votum {
+    background: linear-gradient(180deg, #fefcf8, #f9f3e8);
+    border: 1px solid var(--wine);
+    color: var(--wine);
+    position: relative;
+    box-shadow: 0 1px 2px rgba(107, 24, 24, 0.1);
+  }
+
+  .gh-btn.votum:hover {
+    background: linear-gradient(180deg, #fdf8ee, #f5ecd9);
+  }
+
+  .gh-btn.votum .gh-btn-count {
+    background: var(--wine);
+    color: var(--parchment);
+    border-left-color: var(--wine);
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .gh-btn.votum .seal-mini {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--wine), var(--wine-deep));
+    display: inline-block;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  }
+
+  .gh-description {
+    color: var(--gh-muted);
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  .gh-topics {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .gh-topic {
+    background: #ddf4ff;
+    color: #0969da;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  /* Votum dropdown panel - what shows when you click */
+  .votum-panel {
+    margin-top: 32px;
+    background: linear-gradient(180deg, #fefcf8 0%, #faf2e3 100%);
+    border: 1px solid rgba(107, 24, 24, 0.25);
+    border-radius: 8px;
+    padding: 28px 32px;
+    position: relative;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 4px 12px rgba(107, 24, 24, 0.06);
+  }
+
+  .votum-panel::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 24px;
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #fefcf8, #fefcf8 50%, transparent 50%);
+    border-top: 1px solid rgba(107, 24, 24, 0.25);
+    border-left: 1px solid rgba(107, 24, 24, 0.25);
+    transform: rotate(45deg) translateY(-50%);
+  }
+
+  .votum-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .votum-count-display {
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .votum-count {
+    font-size: 56px;
+    font-weight: 500;
+    color: var(--wine);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .votum-count-label {
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--graphite);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .votum-seal-large {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--wine) 0%, var(--wine-deep) 60%, #2a0606 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.15em;
+    box-shadow:
+      inset 0 2px 6px rgba(255, 255, 255, 0.15),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.4),
+      0 6px 16px rgba(74, 14, 14, 0.25);
+    transform: rotate(8deg);
+    position: relative;
+  }
+
+  .votum-seal-large::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    border: 1px dashed rgba(244, 237, 224, 0.4);
+  }
+
+  .voucher-list {
+    list-style: none;
+  }
+
+  .voucher {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px dashed rgba(107, 24, 24, 0.12);
+  }
+
+  .voucher:last-child { border-bottom: none; }
+
+  .voucher-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), #8B6F2E);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--parchment);
+    font-weight: 600;
+    font-size: 14px;
+    font-family: 'Cormorant Garamond', serif;
+    flex-shrink: 0;
+  }
+
+  .voucher-avatar.t { background: linear-gradient(135deg, #2a4d3a, #1a3525); }
+  .voucher-avatar.s { background: linear-gradient(135deg, #6B1818, #4A0E0E); }
+  .voucher-avatar.m { background: linear-gradient(135deg, #3a3340, #1f1a25); }
+  .voucher-avatar.d { background: linear-gradient(135deg, #5d4a2e, #3a2e1c); }
+
+  .voucher-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .voucher-name {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .voucher-relation {
+    font-size: 12px;
+    color: var(--graphite);
+    margin-top: 2px;
+    font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+  }
+
+  .voucher-relation .you-follow {
+    color: var(--wine);
+    font-weight: 600;
+    font-style: normal;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: rgba(107, 24, 24, 0.08);
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .voucher-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--soft);
+    letter-spacing: 0.05em;
+  }
+
+  .votum-panel-footer {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(107, 24, 24, 0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--graphite);
+  }
+
+  .footer-cta {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--wine);
+  }
+
+  .footer-cta::before { content: "✦ "; color: var(--gold); }
+
+  /* ===== README BADGE ===== */
+  .readme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .readme-card {
+    background: white;
+    border: 1px solid var(--gh-border);
+    border-radius: 6px;
+    padding: 28px 32px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .readme-card h2 {
+    font-size: 24px;
+    margin-bottom: 16px;
+    color: var(--gh-text);
+    font-weight: 600;
+    border-bottom: 1px solid var(--gh-border);
+    padding-bottom: 12px;
+  }
+
+  .readme-card p {
+    color: var(--gh-muted);
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .readme-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .badge-label {
+    background: #555;
+    color: white;
+    padding: 0 8px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .badge-value {
+    padding: 0 8px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    color: white;
+    font-weight: 600;
+  }
+
+  .badge-build .badge-value { background: #4c1; }
+  .badge-license .badge-value { background: #007ec6; }
+  .badge-stars .badge-value { background: #d4a017; }
+
+  /* The hero badge */
+  .badge-votum {
+    height: 26px;
+    background: var(--parchment);
+    border: 1px solid var(--wine);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(107, 24, 24, 0.15);
+  }
+
+  .badge-votum .badge-label {
+    background: var(--ink);
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    padding: 0 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-votum .badge-value {
+    background: var(--wine);
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 10px;
+  }
+
+  .code-block {
+    background: #f6f8fa;
+    border: 1px solid var(--gh-border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--gh-text);
+    margin-top: 8px;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+
+  .code-block .comment { color: #59636e; }
+  .code-block .punct { color: #cf222e; }
+
+  /* ===== COMPARISON ===== */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 32px;
+    align-items: center;
+    margin-top: 40px;
+  }
+
+  .compare-card {
+    background: white;
+    border: 1px solid rgba(26, 20, 16, 0.1);
+    border-radius: 8px;
+    padding: 32px 28px;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(26, 20, 16, 0.04);
+  }
+
+  .compare-card.bad {
+    border-color: rgba(107, 24, 24, 0.15);
+  }
+
+  .compare-card.bad::before {
+    content: "Suspicious";
+    position: absolute;
+    top: -10px;
+    right: 16px;
+    background: var(--wine);
+    color: var(--parchment);
+    padding: 2px 12px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .compare-card.good {
+    border-color: rgba(76, 110, 76, 0.3);
+    background: linear-gradient(180deg, white, #f8faf6);
+  }
+
+  .compare-card.good::before {
+    content: "Authentic";
+    position: absolute;
+    top: -10px;
+    right: 16px;
+    background: #2a4d3a;
+    color: var(--parchment);
+    padding: 2px 12px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .repo-name-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--gh-blue);
+    margin-bottom: 16px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 0;
+    border-bottom: 1px dotted rgba(26, 20, 16, 0.1);
+  }
+
+  .stat-row:last-child { border-bottom: none; }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--graphite);
+    letter-spacing: 0.05em;
+  }
+
+  .stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .stat-value.muted { color: var(--soft); }
+  .stat-value.wine { color: var(--wine); font-size: 32px; }
+
+  .vs-divider {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 32px;
+    color: var(--gold);
+  }
+
+  /* ===== HOW IT WORKS ===== */
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 48px;
+  }
+
+  .pillar {
+    border-top: 2px solid var(--wine);
+    padding-top: 24px;
+  }
+
+  .pillar-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .pillar-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+
+  .pillar-body {
+    font-size: 14px;
+    color: var(--graphite);
+    line-height: 1.6;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    margin-top: 100px;
+    padding: 48px 0 60px;
+    border-top: 1px solid rgba(26, 20, 16, 0.12);
+    text-align: center;
+  }
+
+  .footer-tag {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--graphite);
+    margin-bottom: 8px;
+  }
+
+  .footer-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--soft);
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero > * { animation: fadeUp 0.8s ease-out backwards; }
+  .hero > *:nth-child(1) { animation-delay: 0.1s; }
+  .hero > *:nth-child(2) { animation-delay: 0.2s; }
+  .hero > *:nth-child(3) { animation-delay: 0.3s; }
+  .hero > *:nth-child(4) { animation-delay: 0.4s; }
+
+  /* Mobile */
+  @media (max-width: 900px) {
+    .header-inner { flex-direction: column; gap: 24px; }
+    nav { flex-wrap: wrap; gap: 16px; padding-top: 0; }
+    .gh-content { padding: 20px; }
+    .gh-actions { justify-content: flex-start; }
+    .readme-grid { grid-template-columns: 1fr; gap: 24px; }
+    .comparison-grid { grid-template-columns: 1fr; }
+    .vs-divider { text-align: center; }
+    .pillars { grid-template-columns: 1fr; gap: 24px; }
+    .section-title { font-size: 32px; }
+    .section { padding: 60px 0; }
+    .container { padding: 0 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="header-inner">
+      <div class="logo-lockup">
+        <div class="seal">V</div>
+        <div>
+          <div class="logo-text">Votum</div>
+          <div class="logo-sub">Vouch · Earn · Stand By</div>
+        </div>
+      </div>
+      <nav>
+        <a href="#mockup">In Context</a>
+        <a href="#badge">The Badge</a>
+        <a href="#compare">vs. Stars</a>
+        <a href="#how">How It Works</a>
+        <a href="/sign-in.html">Sign in</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-tag">a solemn vow for open source</div>
+    <h1>Stars are <em>cheap.</em><br>Votum is <em>earned.</em></h1>
+    <div class="hero-lede">
+      A bot-proof endorsement system for GitHub. Real developers. Limited slots. Personal accountability. The kind of approval that actually means something.
+    </div>
+    <div class="hero-meta">
+      <span>v0.1 · Browser Extension</span>
+      <div class="dot"></div>
+      <span>MIT Licensed</span>
+      <div class="dot"></div>
+      <span>Open Source</span>
+    </div>
+  </section>
+
+  <!-- ===== GITHUB MOCKUP ===== -->
+  <section class="section" id="mockup">
+    <div class="section-label">Figure I</div>
+    <h2 class="section-title">A new button on every repo.</h2>
+    <p class="section-sub">Sits beside Watch, Fork, and Star. Looks like it always belonged there. Means something none of them do.</p>
+
+    <div class="gh-frame">
+      <div class="gh-titlebar">
+        <div class="gh-dot"></div>
+        <div class="gh-dot"></div>
+        <div class="gh-dot"></div>
+        <div class="gh-url">github.com/sindresorhus/awesome-nodejs</div>
+      </div>
+
+      <div class="gh-content">
+        <div class="gh-repo-header">
+          <svg class="gh-repo-icon" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/>
+          </svg>
+          <span class="gh-org">sindresorhus</span>
+          <span class="gh-slash">/</span>
+          <span class="gh-repo-name">awesome-nodejs</span>
+          <span class="gh-public">Public</span>
+        </div>
+
+        <div class="gh-actions">
+          <button class="gh-btn">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2c1.981 0 3.671.992 4.933 2.078 1.27 1.091 2.187 2.345 2.637 3.023a1.62 1.62 0 0 1 0 1.798c-.45.678-1.367 1.932-2.637 3.023C11.67 13.008 9.981 14 8 14c-1.981 0-3.671-.992-4.933-2.078C1.797 10.83.88 9.576.43 8.898a1.62 1.62 0 0 1 0-1.798c.45-.677 1.367-1.931 2.637-3.022C4.33 2.992 6.019 2 8 2ZM1.679 7.932a.12.12 0 0 0 0 .136c.411.622 1.241 1.75 2.366 2.717C5.176 11.758 6.527 12.5 8 12.5c1.473 0 2.825-.742 3.955-1.715 1.124-.967 1.954-2.096 2.366-2.717a.12.12 0 0 0 0-.136c-.412-.621-1.242-1.75-2.366-2.717C10.824 4.242 9.473 3.5 8 3.5c-1.473 0-2.825.742-3.955 1.715-1.125.967-1.955 2.096-2.366 2.717ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z"/></svg>
+            Watch
+            <span class="gh-btn-count">142</span>
+          </button>
+          <button class="gh-btn">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/></svg>
+            Fork
+            <span class="gh-btn-count">12.4k</span>
+          </button>
+          <button class="gh-btn">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+            Star
+            <span class="gh-btn-count">58.3k</span>
+          </button>
+          <button class="gh-btn votum">
+            <span class="seal-mini"></span>
+            Votum
+            <span class="gh-btn-count">312</span>
+          </button>
+        </div>
+
+        <div class="gh-description">
+          ⚡ Delightful Node.js packages and resources, curated and verified by the community.
+        </div>
+
+        <div class="gh-topics">
+          <span class="gh-topic">nodejs</span>
+          <span class="gh-topic">awesome</span>
+          <span class="gh-topic">javascript</span>
+          <span class="gh-topic">awesome-list</span>
+          <span class="gh-topic">resources</span>
+        </div>
+
+        <!-- The Votum panel - what appears when you click -->
+        <div class="votum-panel">
+          <div class="votum-panel-header">
+            <div class="votum-count-display">
+              <div class="votum-count">312</div>
+              <div class="votum-count-label">Vows · Witnessed</div>
+            </div>
+            <div class="votum-seal-large">VOTUM</div>
+          </div>
+
+          <ul class="voucher-list">
+            <li class="voucher">
+              <div class="voucher-avatar s">s</div>
+              <div class="voucher-info">
+                <div class="voucher-name">@sindresorhus<span class="you-follow">You follow</span></div>
+                <div class="voucher-relation">Author. Stands by his own work since 2014.</div>
+              </div>
+              <div class="voucher-meta">slot 3 of 10</div>
+            </li>
+            <li class="voucher">
+              <div class="voucher-avatar t">t</div>
+              <div class="voucher-info">
+                <div class="voucher-name">@tj<span class="you-follow">You follow</span></div>
+                <div class="voucher-relation">Has staked their name here for 18 months.</div>
+              </div>
+              <div class="voucher-meta">slot 1 of 10</div>
+            </li>
+            <li class="voucher">
+              <div class="voucher-avatar m">m</div>
+              <div class="voucher-info">
+                <div class="voucher-name">@mitchellh</div>
+                <div class="voucher-relation">Recognized maintainer · Ghostty, Vagrant, HashiCorp.</div>
+              </div>
+              <div class="voucher-meta">slot 7 of 10</div>
+            </li>
+            <li class="voucher">
+              <div class="voucher-avatar d">d</div>
+              <div class="voucher-info">
+                <div class="voucher-name">@dhh</div>
+                <div class="voucher-relation">Recognized maintainer · Rails, Hey, Basecamp.</div>
+              </div>
+              <div class="voucher-meta">slot 4 of 10</div>
+            </li>
+          </ul>
+
+          <div class="votum-panel-footer">
+            <span>+ 308 other developers, all manually verified.</span>
+            <span class="footer-cta">Take the vow yourself</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== README BADGE ===== -->
+  <section class="section" id="badge">
+    <div class="section-label">Figure II</div>
+    <h2 class="section-title">A badge worth wearing.</h2>
+    <p class="section-sub">One line of markdown. The first thing visitors see when they open your README, and the last metric a botter can fake.</p>
+
+    <div class="readme-grid">
+      <div class="readme-card">
+        <h2>awesome-nodejs</h2>
+        <div class="readme-badges">
+          <span class="badge badge-build"><span class="badge-label">build</span><span class="badge-value">passing</span></span>
+          <span class="badge badge-license"><span class="badge-label">license</span><span class="badge-value">MIT</span></span>
+          <span class="badge badge-stars"><span class="badge-label">stars</span><span class="badge-value">★ 58.3k</span></span>
+          <span class="badge badge-votum"><span class="badge-label">votum</span><span class="badge-value">⚜ 312</span></span>
+        </div>
+        <p>⚡ Delightful Node.js packages and resources, curated and verified by the community.</p>
+        <p style="font-size: 13px; color: var(--soft); font-style: italic;">Note the contrast: 58.3k strangers clicked a star. 312 named developers staked their reputation.</p>
+      </div>
+
+      <div>
+        <p style="font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--graphite); line-height: 1.5; margin-bottom: 20px;">
+          Drop the badge in your README. The number updates daily. The names are personalized to whoever is looking at it.
+        </p>
+        <div class="code-block">
+<span class="comment">&lt;!-- README.md --&gt;</span>
+<span class="punct">[</span>![Votum](https://votum.dev/api/badge/<span class="punct">{</span>org<span class="punct">}</span>/<span class="punct">{</span>repo<span class="punct">}</span>.svg)<span class="punct">]</span>(https://votum.dev/r/<span class="punct">{</span>org<span class="punct">}</span>/<span class="punct">{</span>repo<span class="punct">}</span>)
+        </div>
+        <p style="font-size: 13px; color: var(--graphite); margin-top: 16px; line-height: 1.6;">
+          The badge dynamically renders the count and, when clicked, opens a page showing every voucher, every relationship to you, and every slot they've spent across the ecosystem.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== COMPARISON ===== -->
+  <section class="section" id="compare">
+    <div class="section-label">Figure III</div>
+    <h2 class="section-title">The same repo. Two truths.</h2>
+    <p class="section-sub">A real example of how a star count can lie and a Votum count cannot. Same project, same time, two completely different stories about who actually backs it.</p>
+
+    <div class="comparison-grid">
+      <div class="compare-card bad">
+        <div class="repo-name-display">defi-ai-toolkit / agent-vault</div>
+        <div class="stat-row">
+          <span class="stat-label">⭐ GitHub Stars</span>
+          <span class="stat-value">47,200</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Stars per dependent repo</span>
+          <span class="stat-value muted">0.04</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Active dependents</span>
+          <span class="stat-value muted">3</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">⚜ Votum count</span>
+          <span class="stat-value wine">8</span>
+        </div>
+        <p style="margin-top: 16px; font-size: 13px; color: var(--graphite); font-style: italic; line-height: 1.5;">
+          47,200 stars from accounts averaging 116 days old. 8 named developers willing to put their reputation on it.
+        </p>
+      </div>
+
+      <div class="vs-divider">vs.</div>
+
+      <div class="compare-card good">
+        <div class="repo-name-display">tinygrad / tinygrad</div>
+        <div class="stat-row">
+          <span class="stat-label">⭐ GitHub Stars</span>
+          <span class="stat-value">2,100</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Stars per dependent repo</span>
+          <span class="stat-value">0.18</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Active dependents</span>
+          <span class="stat-value">412</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">⚜ Votum count</span>
+          <span class="stat-value wine">847</span>
+        </div>
+        <p style="margin-top: 16px; font-size: 13px; color: var(--graphite); font-style: italic; line-height: 1.5;">
+          A fraction of the stars. Hundreds of senior engineers, including names you'd recognize, putting their reputation on it.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section class="section" id="how">
+    <div class="section-label">Figure IV</div>
+    <h2 class="section-title">Three rules. That's the whole game.</h2>
+    <p class="section-sub">Borrowed from medicine, mythology, and the way humans have actually built trust for centuries.</p>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar-num">i.</div>
+        <div class="pillar-title">Ten slots, no more.</div>
+        <div class="pillar-body">Every developer holds ten Votum slots at any time. Want to vouch for an eleventh repo? Drop one of the others. Scarcity makes the signal mean something. A vouch you cannot easily give is a vouch worth receiving.</div>
+      </div>
+
+      <div class="pillar">
+        <div class="pillar-num">ii.</div>
+        <div class="pillar-title">Your name is on it.</div>
+        <div class="pillar-body">Every Votum is public, attached to your handle, and visible on your profile. If you stand by malware, that's on your record. If you stand by something that ships, that's on your record too. Skin in the game, the way every working trust system in nature has it.</div>
+      </div>
+
+      <div class="pillar">
+        <div class="pillar-num">iii.</div>
+        <div class="pillar-title">Bots cannot enter.</div>
+        <div class="pillar-body">Auto-qualify with twelve months of real merged PRs, or apply for manual review. Each application is a human looking at a real account for sixty seconds. To bot the system, you'd need a thousand of those approvals, one at a time. The economics break.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-tag">Earn your votum.</div>
+    <div class="footer-meta">An open source proposal · est. mmxxvi</div>
+  </footer>
+
+</div>
+
+</body>
+</html>
