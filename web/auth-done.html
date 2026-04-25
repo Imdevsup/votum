@@ -20,23 +20,62 @@
       If the extension popup doesn't update right away, click the Votum icon
       in your toolbar.
     </p>
+
+    <!-- Surfaces when sign-in succeeds but eligibility is still pending. -->
+    <div id="pending-block" class="hidden" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--rule);">
+      <p style="font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 17px; color: var(--ink);">
+        Your account didn't pass the auto-check, but you can still vouch
+        once we've reviewed an application by hand.
+      </p>
+      <a href="/apply.html" class="btn primary" style="margin-top: 10px">Apply for review →</a>
+    </div>
   </div>
-  <script>
-    (function () {
-      const params = new URLSearchParams(location.search);
-      if (params.get('status') === 'error') {
-        document.getElementById('title').textContent = 'Something went wrong.';
-        const reason = params.get('reason') || 'unknown_error';
-        document.getElementById('msg').textContent =
-          `We could not complete sign-in (${reason}). Try again from the extension popup.`;
-      }
-      // Best-effort cross-extension nudge.
+
+  <script type="module">
+    import { API_BASE } from './config.js';
+    const params = new URLSearchParams(location.search);
+
+    if (params.get('status') === 'error') {
+      document.getElementById('title').textContent = 'Something went wrong.';
+      const reason = params.get('reason') || 'unknown_error';
+      document.getElementById('msg').textContent =
+        `We could not complete sign-in (${reason}). Try again from the extension popup.`;
+    } else {
+      // Probe /me to find out the eligibility state and show the right CTA.
       try {
-        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-          chrome.runtime.sendMessage({ type: 'votum_auth_changed' }, () => {});
+        const res = await fetch(`${API_BASE}/v1/me`, { credentials: 'include' });
+        if (res.ok) {
+          const me = await res.json();
+          if (me.eligibility === 'pending' || me.eligibility === 'rejected') {
+            document.getElementById('pending-block').classList.remove('hidden');
+            const titleEl = document.getElementById('title');
+            const msgEl = document.getElementById('msg');
+            titleEl.textContent = `Welcome, ${me.login}.`;
+            msgEl.innerHTML =
+              me.eligibility_reason
+                ? `<em style="font-family: 'Cormorant Garamond', Georgia, serif;">${me.eligibility_reason}</em>`
+                : 'Your account is signed in but not yet eligible to vouch.';
+          } else if (me.eligibility === 'auto_eligible' || me.eligibility === 'manually_eligible') {
+            document.getElementById('title').textContent = `Sealed, ${me.login}.`;
+            document.getElementById('msg').innerHTML =
+              `You're eligible. ${me.slots_used} of ${me.slots_total} slots used. Open the extension popup or visit any GitHub repo.`;
+          } else if (me.eligibility === 'suspended') {
+            document.getElementById('title').textContent = 'Account suspended.';
+            document.getElementById('msg').textContent =
+              me.eligibility_reason || 'This account has been suspended.';
+          }
         }
-      } catch {}
-    })();
+      } catch {
+        // Network blip; the default "Sealed." copy stays.
+      }
+    }
+
+    // Best-effort cross-extension nudge.
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        chrome.runtime.sendMessage({ type: 'votum_auth_changed' }, () => {});
+      }
+    } catch {}
   </script>
 </body>
 </html>

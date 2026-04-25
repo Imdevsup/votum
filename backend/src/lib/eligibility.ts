@@ -1,9 +1,15 @@
 // Auto-eligibility computation. Runs at sign-in and weekly via cron.
 //
 // Rule: a viewer is auto_eligible iff
-//   - account is at least 365 days old, AND
+//   - account is at least 180 days old, AND
 //   - they authored at least 3 PRs merged into repos they don't own, AND
 //   - they pushed in the last 90 days.
+//
+// The 180-day floor is high enough that creating fresh bot accounts to
+// pass the gate is uneconomical, but low enough that working developers
+// who joined GitHub last semester aren't punished. The harder signals
+// are the merged-PR count (humans, not bots, get reviewed PRs into
+// other people's repos) and recent push activity.
 import { prisma } from '../db.js';
 import { github, GitHubApiError } from './github.js';
 
@@ -29,10 +35,10 @@ export async function computeAutoEligibility(
   }
 
   const accountAgeDays = (Date.now() - new Date(user.created_at).getTime()) / ONE_DAY_MS;
-  if (accountAgeDays < 365) {
+  if (accountAgeDays < 180) {
     return {
       eligibility: 'pending',
-      reason: `Account is ${Math.floor(accountAgeDays)} days old; auto-eligibility requires 365.`,
+      reason: `Account is ${Math.floor(accountAgeDays)} days old; auto-eligibility requires 180.`,
     };
   }
 
