@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Votum",
+  "version": "0.1.0",
+  "description": "A bot-resistant endorsement system for GitHub repositories.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://github.com/*",
+    "http://localhost:3000/*",
+    "https://api.votum.dev/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": [
+        "config.js",
+        "content/util.js",
+        "content/api.js",
+        "content/render.js",
+        "content/lifecycle.js",
+        "content.js"
+      ],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Votum"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/seal.svg"],
+      "matches": ["https://github.com/*"]
+    }
+  ]
+}

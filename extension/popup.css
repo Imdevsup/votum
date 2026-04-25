@@ -1,0 +1,208 @@
+/* Extension popup. Same wine + parchment palette as the marketing page. */
+
+:root {
+  --parchment: #F4EDE0;
+  --parchment-dark: #E8DEC9;
+  --ink: #1A1410;
+  --wine: #6B1818;
+  --wine-deep: #4A0E0E;
+  --cream: #F5E6C9;
+  --gold: #A88944;
+  --graphite: #4A4540;
+  --soft: #8B8478;
+  --rule: rgba(74, 14, 14, 0.15);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 340px;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--parchment);
+}
+
+.hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--parchment);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+.hd-link {
+  color: var(--wine);
+  font-size: 12px;
+  text-decoration: none;
+}
+.hd-link:hover { text-decoration: underline; }
+
+main {
+  padding: 16px;
+  background: linear-gradient(180deg, #fefcf8 0%, #faf2e3 100%);
+  min-height: 220px;
+}
+
+.loading-msg {
+  margin: 0;
+  color: var(--graphite);
+  font-style: italic;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+h1, h2 {
+  margin: 0 0 8px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  color: var(--wine-deep);
+}
+h1 { font-size: 22px; }
+h2 { font-size: 14px; margin-top: 16px; color: var(--ink); }
+
+p { margin: 0 0 10px; line-height: 1.5; color: var(--ink); }
+.muted { color: var(--graphite); }
+.small { font-size: 11px; }
+.hidden { display: none !important; }
+
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+.btn.primary {
+  background: linear-gradient(180deg, var(--wine), var(--wine-deep));
+  color: var(--cream);
+  border-color: var(--wine);
+}
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost {
+  background: transparent;
+  color: var(--graphite);
+  border-color: var(--rule);
+  margin-top: 12px;
+}
+.btn.ghost:hover { color: var(--ink); border-color: var(--wine); }
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--rule);
+}
+.who img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--parchment-dark);
+}
+.who .who-login {
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+.who .who-status {
+  font-size: 10px;
+  color: var(--graphite);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-top: 2px;
+}
+
+.slots-bar {
+  height: 6px;
+  background: rgba(107, 24, 24, 0.10);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.slots-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--wine-deep), var(--wine));
+  width: 0%;
+  transition: width 200ms ease;
+}
+.slots-text {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--graphite);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+}
+.slots-text strong {
+  font-style: normal;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 14px;
+  color: var(--wine);
+}
+
+.vouch-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.vouch-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: #fff;
+}
+.vouch-list a {
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink);
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vouch-list a:hover { color: var(--wine); }
+.vouch-list button {
+  border: none;
+  background: transparent;
+  color: var(--wine);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.vouch-list button:hover { background: rgba(107, 24, 24, 0.08); }

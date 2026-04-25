@@ -1,0 +1,22 @@
+{
+  "name": "votum",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A bot-resistant endorsement system for GitHub repositories.",
+  "license": "MIT",
+  "workspaces": [
+    "backend",
+    "extension",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@votum/backend",
+    "build": "npm run build --workspaces --if-present",
+    "db:migrate": "npm run db:migrate --workspace=@votum/backend",
+    "db:seed": "npm run db:seed --workspace=@votum/backend",
+    "extension:pack": "powershell -NoProfile -Command \"if (Test-Path dist\\extension\\votum-extension.zip) { Remove-Item dist\\extension\\votum-extension.zip -Force }; Compress-Archive -Path extension\\* -DestinationPath dist\\extension\\votum-extension.zip -CompressionLevel Optimal\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

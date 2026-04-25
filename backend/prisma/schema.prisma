@@ -1,0 +1,116 @@
+// Prisma schema for Votum.
+//
+// Local dev uses SQLite (zero-setup). For production swap the datasource
+// provider to "postgresql" and re-run `prisma migrate dev`. SQLite does not
+// support native enums or string arrays, so we model those as TEXT with the
+// allowed values enforced by Zod at the API edge — see backend/src/lib.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String                    @id @default(uuid())
+  githubId             BigInt                    @unique
+  githubLogin          String                    @unique
+  avatarUrl            String
+  /// One of: pending | auto_eligible | manually_eligible | rejected | suspended
+  eligibility          String                    @default("pending")
+  eligibilityReason    String?
+  isAdmin              Boolean                   @default(false)
+  createdAt            DateTime                  @default(now())
+  lastSeenAt           DateTime                  @default(now())
+  /// Last time we ran the auto-eligibility recompute against GitHub.
+  eligibilityCheckedAt DateTime?
+  /// Last time we synced the viewer's GitHub follow list into FollowGraph.
+  followGraphSyncedAt  DateTime?
+
+  votums               Votum[]
+  applications         ManualReviewApplication[] @relation("Applicant")
+  reviewedApplications ManualReviewApplication[] @relation("Reviewer")
+  sessions             Session[]
+}
+
+model Repo {
+  id           String   @id @default(uuid())
+  githubId     BigInt   @unique
+  owner        String
+  name         String
+  fullName     String   @unique
+  description  String?
+  language     String?
+  stars        Int      @default(0)
+  lastSyncedAt DateTime @default(now())
+
+  votums       Votum[]
+
+  @@index([fullName])
+}
+
+model Votum {
+  id          String    @id @default(uuid())
+  userId      String
+  repoId      String
+  createdAt   DateTime  @default(now())
+  withdrawnAt DateTime?
+
+  user        User      @relation(fields: [userId], references: [id])
+  repo        Repo      @relation(fields: [repoId], references: [id])
+
+  @@unique([userId, repoId])
+  @@index([repoId, withdrawnAt])
+  @@index([userId, withdrawnAt])
+}
+
+model ManualReviewApplication {
+  id           String    @id @default(uuid())
+  userId       String
+  reasonText   String
+  /// JSON-encoded array of links (LinkedIn, personal site, etc).
+  links        String    @default("[]")
+  /// One of: pending | approved | rejected
+  status       String    @default("pending")
+  reviewedById String?
+  reviewedAt   DateTime?
+  decisionNote String?
+  createdAt    DateTime  @default(now())
+
+  user         User      @relation("Applicant", fields: [userId], references: [id])
+  reviewer     User?     @relation("Reviewer", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
+}
+
+model FollowGraph {
+  followerId BigInt
+  followedId BigInt
+  fetchedAt  DateTime @default(now())
+
+  @@id([followerId, followedId])
+  @@index([followerId])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Thin response cache for GitHub API calls so we don't burn through the
+/// 5000/h authenticated quota on repeated eligibility recomputes.
+model GitHubCache {
+  key       String   @id
+  payload   String
+  expiresAt DateTime
+}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin queue — Votum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="admin-queue">
+    <h1>Manual review queue</h1>
+    <p class="muted">Paste your <code style="font-family:'JetBrains Mono',monospace">ADMIN_TOKEN</code> to load pending applications.</p>
+
+    <div id="auth-row" style="display: flex; gap: 10px; margin: 18px 0 28px;">
+      <input id="token" type="password" placeholder="ADMIN_TOKEN"
+             style="flex:1; padding:11px 14px; border-radius:8px; border:1px solid var(--rule); font-family:inherit; background: #fff;" />
+      <button id="load" class="btn primary">Load</button>
+    </div>
+
+    <div id="queue"></div>
+    <p id="empty" class="muted hidden" style="margin-top: 8px">
+      No pending applications. The queue is empty.
+    </p>
+    <p id="error" class="small" style="color: #B33636; margin-top: 8px"></p>
+  </div>
+
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
